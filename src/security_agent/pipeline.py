@@ -170,7 +170,17 @@ class Pipeline:
                 expansion_terms=state.expansion_terms,
             )
             state.documents = docs
-            self._log(traj, state, "retrieve", None, {"n_docs": len(docs)})
+            self._log(
+                traj,
+                state,
+                "retrieve",
+                None,
+                {
+                    "n_docs": len(docs),
+                    "doc_ids": [d.id for d in docs],
+                    "sources": [d.source for d in docs],
+                },
+            )
 
             # coverage
             state.coverage = compute_coverage(state)
@@ -332,7 +342,16 @@ def build_default_pipeline(
     if cfg.memory.backend == "amem":
         from security_agent.memory.amem_adapter import AMemAdapter
 
-        memory: MemoryStore = AMemAdapter(cfg.memory.amem_root)
+        # A-Mem's __init__ requires a non-empty API key even if we never call
+        # OpenAI — fall back to "sk-noop" so instantiation succeeds in
+        # dummy-LLM smoke tests. add_note() with pre-seeded keywords/tags
+        # then skips the actual network call.
+        memory: MemoryStore = AMemAdapter(
+            cfg.memory.amem_root,
+            llm_backend=("openai" if cfg.llm.backend != "dummy" else "openai"),
+            llm_model=cfg.llm.model,
+            api_key=cfg.llm.api_key or "sk-noop",
+        )
     else:
         memory = InMemoryStore()
 
