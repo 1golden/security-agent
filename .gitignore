@@ -35,6 +35,7 @@ logs/
 artifacts/
 *.jsonl
 !tests/fixtures/*.jsonl
+!experiments/**/*.jsonl
 *.faiss
 *.index
 *.bin
