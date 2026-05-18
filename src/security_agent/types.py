@@ -58,8 +58,27 @@ class Budget:
     min_coverage_delta: float = 0.05    # if a retry doesn't improve coverage by this, stop
     tokens_spent: int = 0
 
-    def can_retry(self, current_attempt: int, last_delta: float | None) -> bool:
-        if current_attempt >= self.max_retries:
+    def can_retry(self, target_attempt: int, last_delta: float | None) -> bool:
+        """Bug #9 fix — clean semantics:
+
+        ``target_attempt`` is the attempt number that would be EXECUTED if we
+        proceed. E.g. ``target_attempt=1`` means "we are about to start the
+        first retry (attempt #1)". This way:
+
+        - post.decide passes ``state.attempt + 1`` (the retry it would
+          recommend)
+        - the loop, after bumping ``state.attempt``, passes ``state.attempt``
+          directly (it's already the post-bump target)
+
+        Both callsites ask the same question: is attempt #target within
+        budget?
+
+        ``max_retries=N`` means up to N retries are allowed, i.e. valid
+        ``target_attempt`` values are 1..N. Anything beyond is denied.
+        ``max_retries=0`` correctly denies even attempt #1 — so post.decide
+        falls through to ANSWER/STOP without recommending a doomed retry.
+        """
+        if target_attempt > self.max_retries:
             return False
         if self.tokens_spent >= self.max_tokens:
             return False

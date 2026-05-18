@@ -19,22 +19,46 @@ from security_agent.eval.judge import Judge, JudgeVerdict
 
 
 def _extract_evidence(traj: dict) -> list[dict]:
-    """Walk the trajectory and pull out evidence references for the judge."""
-    evidence: list[dict] = []
-    # the pipeline doesn't write document text into the trajectory by default
-    # (would balloon log size). The judge can still grade on the (question,
-    # answer) pair alone. We at least surface doc ids + sources so citations
-    # can be validated.
+    """Walk the trajectory and reconstruct the evidence visible to the judge.
+
+    Bug #1 fix: the pipeline now writes truncated doc text into the retrieve
+    observation (`doc_texts`), so we can rebuild real evidence for the judge.
+    Old-format trajectories (just `doc_ids`) still work — text just falls
+    back to empty, which mirrors the old behavior.
+
+    De-duplicates by doc id across retry passes; keeps the longest text seen.
+    """
+    by_id: dict[str, dict] = {}
     for step in traj.get("steps", []):
-        if step.get("stage") == "retrieve":
-            obs = step.get("observation") or {}
-            for did in obs.get("doc_ids", []) or []:
-                evidence.append({"id": did, "text": ""})
-        if step.get("stage") == "coverage":
-            obs = step.get("observation") or {}
-            for c in obs.get("low_confidence_claims", []) or []:
-                evidence.append({"id": c.strip("[]"), "text": "", "low_conf": True})
-    return evidence
+        if step.get("stage") != "retrieve":
+            continue
+        obs = step.get("observation") or {}
+        # preferred path: rich doc_texts list
+        for doc in obs.get("doc_texts") or []:
+            did = str(doc.get("id"))
+            if not did:
+                continue
+            text = str(doc.get("text") or "")
+            existing = by_id.get(did)
+            if existing is None or len(text) > len(existing.get("text", "")):
+                by_id[did] = {
+                    "id": did,
+                    "text": text,
+                    "source": doc.get("source"),
+                    "score": doc.get("score"),
+                }
+        # legacy fallback: only doc_ids available
+        if "doc_texts" not in obs:
+            sources = obs.get("sources") or []
+            for i, did in enumerate(obs.get("doc_ids", []) or []):
+                did = str(did)
+                if did not in by_id:
+                    by_id[did] = {
+                        "id": did,
+                        "text": "",
+                        "source": sources[i] if i < len(sources) else None,
+                    }
+    return list(by_id.values())
 
 
 def score_trajectory_dict(traj: dict, judge: Judge) -> JudgeVerdict:

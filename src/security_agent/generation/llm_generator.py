@@ -24,8 +24,22 @@ class LLMResponse:
 
 
 class LLMBackend(ABC):
+    """Common LLM interface. Subclasses track cumulative token usage on
+    `total_tokens_used` so the pipeline can enforce a Budget that covers
+    BOTH policy calls and the final answer generation (Bug #6 fix)."""
+
+    def __init__(self) -> None:
+        self.total_tokens_used: int = 0
+        self.calls_made: int = 0
+
     @abstractmethod
-    def chat(self, system: str, user: str, **kwargs) -> LLMResponse: ...
+    def _chat_impl(self, system: str, user: str, **kwargs) -> LLMResponse: ...
+
+    def chat(self, system: str, user: str, **kwargs) -> LLMResponse:
+        resp = self._chat_impl(system, user, **kwargs)
+        self.total_tokens_used += int(resp.tokens or 0)
+        self.calls_made += 1
+        return resp
 
     def json(self, system: str, user: str, **kwargs) -> dict:
         """Convenience: ask for JSON, parse leniently."""
@@ -40,11 +54,15 @@ class LLMBackend(ABC):
         except Exception:
             return {}
 
+    def reset_usage(self) -> None:
+        self.total_tokens_used = 0
+        self.calls_made = 0
+
 
 class DummyLLM(LLMBackend):
     """Deterministic stub that echoes structure. Token count is char//4."""
 
-    def chat(self, system: str, user: str, **kwargs) -> LLMResponse:
+    def _chat_impl(self, system: str, user: str, **kwargs) -> LLMResponse:
         head = user.strip().splitlines()[0][:120] if user.strip() else ""
         text = f"[dummy] system={system[:40]!r} user={head!r}"
         return LLMResponse(text=text, tokens=len(text) // 4)
@@ -52,6 +70,7 @@ class DummyLLM(LLMBackend):
 
 class OpenAILLM(LLMBackend):
     def __init__(self, cfg: LLMConfig) -> None:
+        super().__init__()
         try:
             from openai import OpenAI  # type: ignore[import-not-found]
         except Exception as e:
@@ -68,7 +87,7 @@ class OpenAILLM(LLMBackend):
         self._temp = cfg.temperature
         self._max_tokens = cfg.max_tokens
 
-    def chat(self, system: str, user: str, **kwargs) -> LLMResponse:
+    def _chat_impl(self, system: str, user: str, **kwargs) -> LLMResponse:
         resp = self._client.chat.completions.create(
             model=self._model,
             messages=[

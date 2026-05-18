@@ -40,14 +40,16 @@ def test_state_coverage_delta_only_with_two_history_points():
 
 
 def test_budget_can_retry_respects_limits():
+    """`target_attempt` is the attempt that WOULD run if we proceed."""
     b = Budget(max_retries=2, max_tokens=1000, min_coverage_delta=0.05)
-    assert b.can_retry(0, None) is True
-    assert b.can_retry(2, None) is False
+    assert b.can_retry(1, None) is True   # 1st retry allowed
+    assert b.can_retry(2, None) is True   # 2nd retry allowed
+    assert b.can_retry(3, None) is False  # 3rd retry over budget
     b.tokens_spent = 1500
-    assert b.can_retry(0, None) is False
+    assert b.can_retry(1, None) is False  # over token budget
     b.tokens_spent = 0
-    assert b.can_retry(0, last_delta=0.01) is False
-    assert b.can_retry(0, last_delta=0.10) is True
+    assert b.can_retry(1, last_delta=0.01) is False  # delta too small
+    assert b.can_retry(1, last_delta=0.10) is True
 
 
 def test_action_type_round_trip():

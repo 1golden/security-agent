@@ -120,6 +120,8 @@ def test_rule_post_narrows_when_redundant():
 
 
 def test_rule_post_stops_when_budget_exhausted_and_no_docs():
+    """With max_retries=0, post.decide must NOT recommend any retry action;
+    it falls through to STOP when no documents exist."""
     s = State(question=Question(text="q"))
     s.coverage = Coverage(score=0.2)
     s.budget = Budget(max_retries=0)

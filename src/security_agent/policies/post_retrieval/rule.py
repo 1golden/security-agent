@@ -28,7 +28,7 @@ class RulePostPolicy(PostPolicy):
             )
 
         # 2) too redundant → narrow (try a tighter query)
-        if cov.redundancy > 0.7 and budget.can_retry(state.attempt, delta):
+        if cov.redundancy > 0.7 and budget.can_retry(state.attempt + 1, delta):
             return Action(
                 type=ActionType.NARROW,
                 payload={"reason": "high redundancy"},
@@ -36,7 +36,7 @@ class RulePostPolicy(PostPolicy):
             )
 
         # 3) specific gap → targeted gap_retry on the first missing aspect
-        if cov.missing_aspects and budget.can_retry(state.attempt, delta):
+        if cov.missing_aspects and budget.can_retry(state.attempt + 1, delta):
             return Action(
                 type=ActionType.GAP_RETRY,
                 payload={"aspect": cov.missing_aspects[0]},
@@ -44,7 +44,7 @@ class RulePostPolicy(PostPolicy):
             )
 
         # 4) low score, no specific gap → broaden
-        if cov.score < self._threshold and budget.can_retry(state.attempt, delta):
+        if cov.score < self._threshold and budget.can_retry(state.attempt + 1, delta):
             return Action(
                 type=ActionType.BROADEN,
                 payload={"reason": "low overall coverage"},
@@ -52,7 +52,7 @@ class RulePostPolicy(PostPolicy):
             )
 
         # 5) low confidence claims and budget left → filter them out
-        if cov.low_confidence_claims and budget.can_retry(state.attempt, delta):
+        if cov.low_confidence_claims and budget.can_retry(state.attempt + 1, delta):
             return Action(
                 type=ActionType.FILTER,
                 payload={"drop": list(cov.low_confidence_claims)},

@@ -5,8 +5,8 @@ Stages (in order):
   1. Fast Memory Probe
   2. Pre-Retrieval Policy        (loops here with Post)
   3. Memory Expansion
-  4. RAG Retrieval + Rerank
-  5. Coverage Check
+  4. RAG Retrieval + Rerank      (now multi-query if DECOMPOSE was chosen)
+  5. Coverage Check              (heuristic or LLM; pluggable)
   6. Post-Retrieval Policy        — may emit retry (broaden/narrow/gap_retry)
   7. Answer Generation
   8. Memory Write Policy + Memory Write
@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from typing import Callable
 
 from security_agent.config import Config
-from security_agent.coverage import compute_coverage
+from security_agent.coverage import build_coverage, compute_coverage
 from security_agent.eval_log.logger import TrajectoryLogger
 from security_agent.generation.llm_generator import LLMBackend, LLMGenerator, build_llm
 from security_agent.memory.base import MemoryStore
@@ -40,6 +41,8 @@ from security_agent.types import (
     Action,
     ActionType,
     Budget,
+    Coverage,
+    Document,
     MemoryRecord,
     Question,
     State,
@@ -50,6 +53,12 @@ from security_agent.types import (
     WRITE_AXIS_PROVIDER_UTILITY,
     WRITE_AXIS_REFLECTION,
 )
+
+
+# Cap per-doc text size in the trajectory observation. Big enough that the
+# judge can verify factual claims; small enough that the JSONL log stays
+# manageable. Bug #1 fix.
+_OBS_DOC_TEXT_CAP = 800
 
 
 @dataclass
@@ -76,6 +85,8 @@ class Pipeline:
         expansion: MemoryExpansion,
         input_safety: InputSafety,
         output_safety: OutputSafety,
+        llm: LLMBackend | None = None,
+        coverage_fn: Callable[[State], Coverage] | None = None,
         coverage_threshold: float = 0.5,
         budget: Budget | None = None,
         logger: TrajectoryLogger | None = None,
@@ -90,6 +101,11 @@ class Pipeline:
         self.expansion = expansion
         self.in_safety = input_safety
         self.out_safety = output_safety
+        # Bug #6: the LLM whose token usage is tracked into the Budget. Same
+        # backend the policies and generator use; held as a reference so the
+        # pipeline can sample `total_tokens_used` after each LLM-touching stage.
+        self.llm = llm
+        self.coverage_fn = coverage_fn or compute_coverage
         self.coverage_threshold = coverage_threshold
         self.default_budget = budget or Budget()
         self.logger = logger
@@ -104,6 +120,13 @@ class Pipeline:
         state = State(question=question, budget=Budget(**self.default_budget.to_dict()))
         self._step_counter = 0
 
+        # Reset LLM usage so per-episode budget counting starts from 0.
+        # NB: this is a soft contract — if multiple Pipeline instances share
+        # one LLMBackend, only one of them owns the counter at a time.
+        if self.llm is not None:
+            self.llm.reset_usage()
+        baseline_tokens = self.llm.total_tokens_used if self.llm is not None else 0
+
         # 0. input safety
         verdict = self.in_safety(question.text)
         self._log(traj, state, "input_safety", None, {"allow": verdict.allow, "reason": verdict.reason})
@@ -115,7 +138,7 @@ class Pipeline:
         self._log(traj, state, "probe", None, state.probe.to_dict())
 
         # 2-6. plan -> expand -> retrieve -> coverage -> verify (loop)
-        self._run_loop(state, traj)
+        self._run_loop(state, traj, baseline_tokens)
 
         # 7. generate
         if state.documents or state.memory_records:
@@ -130,6 +153,14 @@ class Pipeline:
                 "I could not find sufficient evidence to answer that confidently."
             )
             self._log(traj, state, "generate", None, {"answer_len": len(state.answer), "tokens": 0})
+
+        # Bug #6: sync remaining LLM tokens (policy + generator) into the budget
+        # so downstream consumers (logs, RL) see the real usage.
+        if self.llm is not None:
+            state.budget.tokens_spent = max(
+                state.budget.tokens_spent,
+                self.llm.total_tokens_used - baseline_tokens,
+            )
 
         state.finished = True
 
@@ -149,10 +180,11 @@ class Pipeline:
 
     # ---- inner loop ----
 
-    def _run_loop(self, state: State, traj: Trajectory) -> None:
+    def _run_loop(self, state: State, traj: Trajectory, baseline_tokens: int = 0) -> None:
         while True:
             # pre-retrieval planning
             pre_action = self.pre.decide(state)
+            self._sync_tokens(state, baseline_tokens)
             self._log(traj, state, "pre", pre_action.to_dict(), None)
             self._apply_pre(state, pre_action)
 
@@ -161,14 +193,18 @@ class Pipeline:
             state.memory_records = records
             self._log(traj, state, "expansion", None, {"n_records": len(records)})
 
-            # retrieval
+            # retrieval — Bug #3: if Pre chose DECOMPOSE, run subqueries
+            # individually and merge by max score. Single-query path otherwise.
             top_k = max(4, len(state.documents) if state.documents else 8)
-            docs = self.retriever.retrieve(
-                state.effective_query,
-                top_k=top_k,
-                providers=state.provider_filter or None,
-                expansion_terms=state.expansion_terms,
-            )
+            docs = self._retrieve_with_subqueries(state, top_k)
+
+            # Bug #7 fix: if a provider filter produced zero docs, retry once
+            # without the filter so a wrong CHOOSE_PROVIDER doesn't tank the
+            # episode. We do NOT consume a retry attempt for this auto-recovery.
+            if not docs and state.provider_filter:
+                state.provider_filter = []
+                docs = self._retrieve_with_subqueries(state, top_k)
+
             state.documents = docs
             self._log(
                 traj,
@@ -179,29 +215,43 @@ class Pipeline:
                     "n_docs": len(docs),
                     "doc_ids": [d.id for d in docs],
                     "sources": [d.source for d in docs],
+                    # Bug #1 fix: embed truncated text so JSONL replay (and the
+                    # LLMJudge) can actually verify factual claims.
+                    "doc_texts": [
+                        {
+                            "id": d.id,
+                            "source": d.source,
+                            "score": d.score,
+                            "text": (d.text or "")[:_OBS_DOC_TEXT_CAP],
+                        }
+                        for d in docs
+                    ],
                 },
             )
 
-            # coverage
-            state.coverage = compute_coverage(state)
+            # coverage (pluggable)
+            state.coverage = self.coverage_fn(state)
+            self._sync_tokens(state, baseline_tokens)
             state.coverage_history.append(state.coverage.score)
             self._log(traj, state, "coverage", None, state.coverage.to_dict())
 
             # post-retrieval verdict
             post_action = self.post.decide(state)
+            self._sync_tokens(state, baseline_tokens)
             self._log(traj, state, "post", post_action.to_dict(), None)
 
             if post_action.type in (ActionType.ANSWER, ActionType.STOP):
                 if post_action.type == ActionType.STOP:
-                    state.answer = None  # caller will produce the "no evidence" message
+                    state.answer = None
                 break
 
             if post_action.type == ActionType.FILTER:
                 drop = set(post_action.payload.get("drop") or [])
                 state.documents = [d for d in state.documents if f"[{d.id}]" not in drop]
-                state.coverage = compute_coverage(state)
-                state.coverage_history.append(state.coverage.score)
-                # filter doesn't consume a retry attempt, but we still check budget
+                state.coverage = self.coverage_fn(state)
+                self._sync_tokens(state, baseline_tokens)
+                # Bug #8 fix: do NOT append to coverage_history here — that
+                # was corrupting coverage_delta() and the Budget check.
                 if not state.budget.can_retry(state.attempt, state.coverage_delta()):
                     break
                 continue
@@ -210,8 +260,39 @@ class Pipeline:
             state.attempt += 1
             self._apply_retry(state, post_action)
             if not state.budget.can_retry(state.attempt, state.coverage_delta()):
-                # one last loop is fine, but if budget says no, stop
                 break
+
+    def _retrieve_with_subqueries(self, state: State, top_k: int) -> list[Document]:
+        """Bug #3 fix: when subqueries are set, retrieve each then merge.
+
+        Merge policy: dedupe by doc id; keep the highest score across runs.
+        """
+        queries: list[str] = [state.effective_query]
+        if state.subqueries:
+            queries.extend(state.subqueries)
+
+        seen: dict[str, Document] = {}
+        for q in queries:
+            docs = self.retriever.retrieve(
+                q,
+                top_k=top_k,
+                providers=state.provider_filter or None,
+                expansion_terms=state.expansion_terms,
+            )
+            for d in docs:
+                if d.id not in seen or d.score > seen[d.id].score:
+                    seen[d.id] = d
+        merged = sorted(seen.values(), key=lambda d: d.score, reverse=True)
+        return merged[:top_k]
+
+    def _sync_tokens(self, state: State, baseline_tokens: int) -> None:
+        """Bug #6: roll up cumulative LLM usage into the per-episode Budget."""
+        if self.llm is None:
+            return
+        state.budget.tokens_spent = max(
+            state.budget.tokens_spent,
+            self.llm.total_tokens_used - baseline_tokens,
+        )
 
     # ---- mutators ----
 
@@ -247,7 +328,6 @@ class Pipeline:
         elif t == ActionType.NARROW:
             state.expansion_terms = []
             if not state.provider_filter and state.documents:
-                # focus on the source of the top-scoring doc
                 top = max(state.documents, key=lambda d: d.score)
                 if top.source:
                     state.provider_filter = [top.source]
@@ -315,6 +395,7 @@ class Pipeline:
         reason: str = "",
     ) -> PipelineResult:
         traj.final_answer = state.answer
+        traj.metadata["tokens_spent"] = state.budget.tokens_spent
         if blocked:
             traj.metadata["blocked"] = True
             traj.metadata["blocked_reason"] = reason
@@ -342,10 +423,6 @@ def build_default_pipeline(
     if cfg.memory.backend == "amem":
         from security_agent.memory.amem_adapter import AMemAdapter
 
-        # A-Mem's __init__ requires a non-empty API key even if we never call
-        # OpenAI — fall back to "sk-noop" so instantiation succeeds in
-        # dummy-LLM smoke tests. add_note() with pre-seeded keywords/tags
-        # then skips the actual network call.
         memory: MemoryStore = AMemAdapter(
             cfg.memory.amem_root,
             llm_backend=("openai" if cfg.llm.backend != "dummy" else "openai"),
@@ -392,6 +469,8 @@ def build_default_pipeline(
         min_coverage_delta=cfg.budget.min_coverage_delta,
     )
 
+    coverage_fn = build_coverage(cfg.pipeline.coverage_kind, llm=llm)
+
     return Pipeline(
         memory=memory,
         retriever=retriever,
@@ -403,6 +482,8 @@ def build_default_pipeline(
         expansion=expansion,
         input_safety=in_safety,
         output_safety=out_safety,
+        llm=llm,
+        coverage_fn=coverage_fn,
         coverage_threshold=cfg.pipeline.coverage_threshold,
         budget=budget,
         logger=logger,

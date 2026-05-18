@@ -232,7 +232,7 @@ class LLMJudge(Judge):
         self,
         llm: LLMBackend,
         weights: dict[str, float] | None = None,
-        max_evidence_chars: int = 4000,
+        max_evidence_chars: int = 12000,   # Bug #10: was 4000 — too tight for 8 chunks
     ) -> None:
         super().__init__(weights)
         self._llm = llm

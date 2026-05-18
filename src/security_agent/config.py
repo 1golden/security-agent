@@ -99,6 +99,9 @@ class PipelineConfig:
     coverage_threshold: float = field(
         default_factory=lambda: _env_float("SA_COVERAGE_THRESHOLD", 0.5)
     )
+    coverage_kind: str = field(
+        default_factory=lambda: _env("SA_COVERAGE_KIND", "heuristic")  # heuristic|llm
+    )
     log_dir: str = field(default_factory=lambda: _env("SA_LOG_DIR", "runs"))
     pre_policy: str = field(default_factory=lambda: _env("SA_PRE_POLICY", "rule"))   # rule|llm|rl
     post_policy: str = field(default_factory=lambda: _env("SA_POST_POLICY", "rule")) # rule|llm|rl
