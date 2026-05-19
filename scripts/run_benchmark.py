@@ -38,7 +38,7 @@ from security_agent.types import Question                              # noqa: E
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("benchmark", help="path to benchmark JSONL")
-    p.add_argument("--policy", choices=["rule", "llm"], default="rule")
+    p.add_argument("--policy", choices=["rule", "llm", "router"], default="rule")
     p.add_argument("--out", required=True, help="output JSONL with per-Q scoring")
     p.add_argument("--limit", type=int, default=None, help="cap to first N questions")
     p.add_argument("--session-prefix", default="bench")
@@ -48,8 +48,14 @@ def main() -> int:
 
     cfg = Config()
     cfg.pipeline.pre_policy = args.policy
-    cfg.pipeline.post_policy = args.policy
-    cfg.pipeline.write_policy = args.policy
+    # Router only swaps the pre policy; post/write stay on rule so we measure
+    # ensemble effect at the rewrite stage alone, not a stacked change.
+    if args.policy == "router":
+        cfg.pipeline.post_policy = "rule"
+        cfg.pipeline.write_policy = "rule"
+    else:
+        cfg.pipeline.post_policy = args.policy
+        cfg.pipeline.write_policy = args.policy
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
