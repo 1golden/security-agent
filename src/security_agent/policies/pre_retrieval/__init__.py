@@ -21,4 +21,10 @@ def build(name: str, **kwargs):
         )
     if name == "rl":
         return RLPrePolicy(**kwargs)
+    if name == "cql":
+        from security_agent.policies.staged_router import CQLPrePolicy
+        llm = kwargs.get("llm")
+        return CQLPrePolicy(
+            llm_arm=LLMPrePolicy(llm=llm) if llm is not None else None,
+        )
     raise ValueError(f"Unknown pre policy: {name}")

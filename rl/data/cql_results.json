@@ -1,38 +1,41 @@
 {
   "alpha_0.0": {
-    "loo_mean": 0.6963833333333334,
+    "loo_mean": 0.6921333333333334,
     "n": 50,
     "arms": {
-      "llm+router+rule": 21,
-      "router": 5,
+      "llm+router+rule": 20,
+      "router": 4,
       "llm+rule": 4,
-      "router+rule": 13,
-      "rule": 4,
-      "llm": 3
+      "router+rule": 16,
+      "rule": 2,
+      "llm+router": 3,
+      "llm": 1
     }
   },
   "alpha_0.1": {
-    "loo_mean": 0.6920500000000002,
+    "loo_mean": 0.6680833333333335,
     "n": 50,
     "arms": {
-      "llm+router+rule": 19,
-      "router": 5,
-      "llm+rule": 4,
+      "llm+router": 5,
+      "llm+router+rule": 14,
+      "rule": 6,
+      "router": 4,
       "router+rule": 13,
-      "rule": 4,
-      "llm": 5
+      "llm+rule": 4,
+      "llm": 4
     }
   },
   "alpha_0.5": {
-    "loo_mean": 0.6920500000000002,
+    "loo_mean": 0.6921333333333334,
     "n": 50,
     "arms": {
-      "llm+router+rule": 19,
-      "router": 5,
+      "llm+router+rule": 20,
+      "router": 4,
       "llm+rule": 4,
-      "router+rule": 13,
-      "rule": 4,
-      "llm": 5
+      "router+rule": 15,
+      "rule": 2,
+      "llm+router": 3,
+      "llm": 2
     }
   },
   "baselines": {

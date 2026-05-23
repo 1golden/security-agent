@@ -34,7 +34,7 @@ export RAG_GENERATION_MODEL=${RAG_GENERATION_MODEL:-deepseek-chat}
 
 mkdir -p "$OUT_DIR"
 
-POLICY=${1:?usage: $0 <rule|llm|router>}
+POLICY=${1:?usage: $0 <rule|llm|router|cql>}
 OUT_FILE=$OUT_DIR/bench50_${POLICY}_v5.jsonl
 
 cd "$ROOT"

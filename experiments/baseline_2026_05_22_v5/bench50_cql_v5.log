@@ -1,0 +1,86 @@
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:38<00:38, 38.54s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:49<00:00, 22.44s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:49<00:00, 24.86s/it]
+[  1/50] score=1.00 tok=321 cat=technique-tactic  Q: 'According to MITRE ATT&CK, which tactic does technique '  eta 3576s
+[  2/50] score=1.00 tok=339 cat=technique-tactic  Q: 'According to MITRE ATT&CK, which tactic does technique '  eta 2262s
+[  3/50] score=0.17 tok=596 cat=technique-tactic  Q: 'According to MITRE ATT&CK, which tactic does technique '  eta 1605s
+[  4/50] score=1.00 tok=806 cat=technique-tactic  Q: 'According to MITRE ATT&CK, which tactic does technique '  eta 1345s
+[  5/50] score=1.00 tok=453 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1052 (Exfiltra'  eta 1281s
+[  6/50] score=0.95 tok=504 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1071.005 (Publ'  eta 1382s
+[  7/50] score=0.97 tok=893 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1566.002 (Spea'  eta 1493s
+[  8/50] score=1.00 tok=291 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1561.001 (Disk'  eta 1342s
+[  9/50] score=1.00 tok=485 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1552.001 (Cred'  eta 1354s
+[ 10/50] score=0.97 tok=1189 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1053.003 (Cron'  eta 1281s
+[ 11/50] score=0.97 tok=1273 cat=technique-descript  Q: 'Briefly describe MITRE ATT&CK technique T1491.001 (Inte'  eta 1179s
+[ 12/50] score=0.10 tok=714 cat=authentication  Q: 'According to the OWASP Authentication Cheat Sheet, what'  eta 1087s
+[ 13/50] score=0.73 tok=919 cat=authentication  Q: 'What does the OWASP Authentication Cheat Sheet recommen'  eta 1014s
+[ 14/50] score=1.00 tok=908 cat=authentication  Q: 'What authentication mechanism does OWASP recommend beyo'  eta 942s
+[ 15/50] score=0.76 tok=562 cat=cryptography  Q: 'Which password hashing algorithm does OWASP recommend a'  eta 887s
+[ 16/50] score=0.89 tok=668 cat=cryptography  Q: 'What does OWASP recommend regarding the work factor (co'  eta 831s
+[ 17/50] score=1.00 tok=928 cat=injection  Q: 'What is the primary defense mechanism recommended by OW'  eta 783s
+[ 18/50] score=0.81 tok=882 cat=injection  Q: 'Under what condition does OWASP consider stored procedu'  eta 742s
+[ 19/50] score=0.84 tok=999 cat=xss  Q: 'What is the primary defense against Cross-Site Scriptin'  eta 705s
+[ 20/50] score=0.23 tok=1157 cat=xss  Q: 'What HTTP response header does OWASP recommend as an ad'  eta 668s
+[ 21/50] score=0.15 tok=1117 cat=csrf  Q: 'What is the recommended primary defense against CSRF at'  eta 645s
+[ 22/50] score=0.97 tok=1042 cat=csrf  Q: 'What cookie attribute does OWASP recommend setting to m'  eta 610s
+[ 23/50] score=0.86 tok=1254 cat=http-headers  Q: 'Which HTTP security header enforces HTTPS-only communic'  eta 614s
+[ 24/50] score=1.00 tok=950 cat=http-headers  Q: 'What does the X-Content-Type-Options HTTP header do and'  eta 597s
+[ 25/50] score=1.00 tok=716 cat=input-validation  Q: 'Does OWASP recommend allowlisting or denylisting for in'  eta 562s
+[ 26/50] score=0.10 tok=996 cat=session  Q: 'What should happen to a session ID immediately after a '  eta 530s
+[ 27/50] score=1.00 tok=1214 cat=session  Q: 'What cookie flag does OWASP recommend to protect sessio'  eta 499s
+[ 28/50] score=1.00 tok=941 cat=session  Q: 'What cookie attribute ensures session cookies are only '  eta 470s
+[ 29/50] score=0.10 tok=1174 cat=cryptography  Q: 'Which symmetric encryption algorithm and key size does '  eta 462s
+[ 30/50] score=0.10 tok=736 cat=access-control  Q: 'What access control principle does OWASP recommend as t'  eta 429s
+[ 31/50] score=0.10 tok=749 cat=logging  Q: 'According to OWASP, what authentication events should a'  eta 408s
+[ 32/50] score=0.97 tok=1141 cat=logging  Q: 'What types of data does OWASP say should never be inclu'  eta 383s
+[ 33/50] score=0.10 tok=619 cat=container-security  Q: 'What does OWASP recommend regarding the user context in'  eta 356s
+[ 34/50] score=0.81 tok=881 cat=jwt  Q: 'What JWT vulnerability does OWASP warn against where an'  eta 331s
+[ 35/50] score=0.97 tok=463 cat=jwt  Q: 'What does OWASP recommend about JWT token expiration to'  eta 305s
+[ 36/50] score=1.00 tok=935 cat=clickjacking  Q: 'Which HTTP header or CSP directive does OWASP recommend'  eta 281s
+[ 37/50] score=0.75 tok=298 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 263s
+[ 38/50] score=0.10 tok=980 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 243s
+[ 39/50] score=0.10 tok=674 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 223s
+[ 40/50] score=0.88 tok=787 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 200s
+[ 41/50] score=1.00 tok=919 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 178s
+[ 42/50] score=0.75 tok=1259 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 158s
+[ 43/50] score=0.75 tok=671 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 137s
+[ 44/50] score=1.00 tok=998 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 117s
+[ 45/50] score=1.00 tok=284 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 97s
+[ 46/50] score=0.10 tok=799 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 77s
+[ 47/50] score=0.75 tok=288 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 59s
+[ 48/50] score=0.75 tok=690 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 39s
+[ 49/50] score=0.10 tok=261 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 20s
+[ 50/50] score=0.75 tok=283 cat=technique-mitigati  Q: 'What mitigation does MITRE ATT&CK recommend for the tec'  eta 0s
+
+Wrote 50 rows to /mnt/d/Project/WORK/security-agent/experiments/baseline_2026_05_22_v5/bench50_cql_v5.jsonl
+Trajectories at /mnt/d/Project/WORK/security-agent/experiments/baseline_2026_05_22_v5/bench50_cql_v5.traj.jsonl
+{
+  "n": 50,
+  "n_scored": 50,
+  "mean_score": 0.7084,
+  "mean_dimensions": {
+    "completeness": 0.534,
+    "evidence_grounding": 0.738,
+    "factual_accuracy": 0.726,
+    "safety": 1.0
+  },
+  "tokens_total": 39006,
+  "tokens_mean": 780.12,
+  "per_category": {
+    "technique-tactic": 0.79375,
+    "technique-description": 0.9821428571428571,
+    "authentication": 0.6116666666666667,
+    "cryptography": 0.5816666666666667,
+    "injection": 0.905,
+    "xss": 0.53,
+    "csrf": 0.5625,
+    "http-headers": 0.9299999999999999,
+    "input-validation": 1.0,
+    "session": 0.7000000000000001,
+    "access-control": 0.1,
+    "logging": 0.5375,
+    "container-security": 0.1,
+    "jwt": 0.8925000000000001,
+    "clickjacking": 1.0,
+    "technique-mitigation": 0.6267857142857143
+  },
+  "elapsed_sec": 1015.0292398929596
+}

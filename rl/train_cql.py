@@ -41,31 +41,31 @@ def load_rows():
 
 
 def fit_cql_q(X, a_idx, returns, n_actions, alpha_cql=0.1, lam=0.3,
-              lr=0.1, iters=500):
+              lr=0.05, iters=200, grad_clip=5.0):
     """Linear Q(s,a) = W[a] · [1, x]. CQL-penalized MC regression.
 
-    Fully vectorized: TD gradient is a one-hot scatter on (n, n_actions)
-    error matrix, CQL gradient is (softmax - one-hot) outer-producted
-    with [1, x]. No per-action Python loops.
+    Fully vectorized + numerically stable (clip td_err, clip grad norm,
+    lower lr+iters). Earlier version at lr=0.1, iters=500 diverged on
+    full-data refit — see rl/export_cql_weights.py.
     """
     n, d = X.shape
-    Xb = np.hstack([np.ones((n, 1)), X])  # (n, d+1)
+    Xb = np.hstack([np.ones((n, 1)), X])              # (n, d+1)
     W = np.zeros((n_actions, d + 1))
     a_onehot = np.zeros((n, n_actions), dtype=np.float32)
     a_onehot[np.arange(n), a_idx] = 1.0
     for _ in range(iters):
-        Q_all = Xb @ W.T                              # (n, n_actions)
-        Q_taken = (Q_all * a_onehot).sum(axis=1)      # (n,)
-        td_err = Q_taken - returns                    # (n,)
-        # TD grad: only contributes to the taken action's row
-        td_grad_for_W = a_onehot * td_err[:, None]    # (n, n_actions)
-        # CQL grad: softmax(Q) - one-hot(a_data)
+        Q_all = Xb @ W.T
+        Q_taken = (Q_all * a_onehot).sum(axis=1)
+        td_err = np.clip(Q_taken - returns, -grad_clip, grad_clip)
+        td_grad_for_W = a_onehot * td_err[:, None]
         Qm = Q_all - Q_all.max(axis=1, keepdims=True)
         p = np.exp(Qm)
         p /= p.sum(axis=1, keepdims=True)
-        cql_grad_for_W = (p - a_onehot)               # (n, n_actions)
-        # Combine and project to W via X.T @ (n, n_actions)
+        cql_grad_for_W = (p - a_onehot)
         grad_W = (td_grad_for_W + alpha_cql * cql_grad_for_W).T @ Xb / n
+        gn = np.linalg.norm(grad_W)
+        if gn > grad_clip:
+            grad_W *= grad_clip / gn
         W -= lr * grad_W
         W[:, 1:] *= (1.0 - lr * lam / n)
     return W
