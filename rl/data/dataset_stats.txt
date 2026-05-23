@@ -1,0 +1,34 @@
+Total rows: 782
+
+=== pre (n=318) ===
+  noop              : 277
+  choose_provider   : 21
+  rewrite           : 15
+  decompose         : 4
+  inherit_filter    : 1
+  mean reward by action:
+    choose_provider   : n= 21  mean=0.425
+    decompose         : n=  4  mean=1.000
+    inherit_filter    : n=  1  mean=0.835
+    noop              : n=277  mean=0.679
+    rewrite           : n= 15  mean=0.553
+
+=== post (n=318) ===
+  gap_retry         : 196
+  answer            : 101
+  narrow            : 17
+  broaden           : 3
+  filter            : 1
+  mean reward by action:
+    answer            : n=101  mean=0.686
+    broaden           : n=  3  mean=0.100
+    filter            : n=  1  mean=1.000
+    gap_retry         : n=196  mean=0.652
+    narrow            : n= 17  mean=0.684
+
+=== write (n=146) ===
+  skip_write        : 104
+  write             : 42
+  mean reward by action:
+    skip_write        : n=104  mean=0.583
+    write             : n= 42  mean=0.843

@@ -1,0 +1,44 @@
+{
+  "alpha_0.0": {
+    "loo_mean": 0.6963833333333334,
+    "n": 50,
+    "arms": {
+      "llm+router+rule": 21,
+      "router": 5,
+      "llm+rule": 4,
+      "router+rule": 13,
+      "rule": 4,
+      "llm": 3
+    }
+  },
+  "alpha_0.1": {
+    "loo_mean": 0.6920500000000002,
+    "n": 50,
+    "arms": {
+      "llm+router+rule": 19,
+      "router": 5,
+      "llm+rule": 4,
+      "router+rule": 13,
+      "rule": 4,
+      "llm": 5
+    }
+  },
+  "alpha_0.5": {
+    "loo_mean": 0.6920500000000002,
+    "n": 50,
+    "arms": {
+      "llm+router+rule": 19,
+      "router": 5,
+      "llm+rule": 4,
+      "router+rule": 13,
+      "rule": 4,
+      "llm": 5
+    }
+  },
+  "baselines": {
+    "rule_only": 0.6578,
+    "router_v4_heuristic": 0.6733,
+    "bc_vanilla": 0.6689,
+    "oracle_max_per_q": 0.8366
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "none": {
+    "loo_mean": 0.6689000000000002,
+    "n": 50,
+    "matched_policy_counts": {
+      "llm+router": 4,
+      "llm+router+rule": 15,
+      "rule": 6,
+      "router": 3,
+      "router+rule": 9,
+      "llm+rule": 5,
+      "llm": 8
+    }
+  },
+  "reward": {
+    "loo_mean": 0.6157666666666667,
+    "n": 50,
+    "matched_policy_counts": {
+      "llm+router": 7,
+      "llm+router+rule": 15,
+      "rule": 5,
+      "router": 4,
+      "router+rule": 5,
+      "llm": 10,
+      "llm+rule": 4
+    }
+  },
+  "baselines": {
+    "rule_only": 0.6578,
+    "llm_only": 0.6327,
+    "router_v4_heuristic": 0.6733,
+    "oracle_max_per_q": 0.8366
+  }
+}
