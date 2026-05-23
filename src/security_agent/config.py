@@ -68,6 +68,12 @@ class RetrieverConfig:
             "SA_HANDMADE_RAG_ROOT", "/mnt/d/Project/WORK/all-in-rag/code/handmade_rag"
         )
     )
+    # Optional override for the index directory. Empty means "use the
+    # adapter's default <root>/artifacts/security_index". v5 sets this to
+    # the extended index that includes NIST SP 800-53.
+    handmade_rag_index_dir: str = field(
+        default_factory=lambda: _env("SA_HANDMADE_RAG_INDEX_DIR", "")
+    )
     top_k: int = field(default_factory=lambda: _env_int("SA_RETRIEVER_TOPK", 8))
     rerank_top_k: int = field(default_factory=lambda: _env_int("SA_RETRIEVER_RERANK_TOPK", 4))
 

@@ -1,0 +1,13 @@
+{
+  "base": "heuristic v4 (compound +2, pronoun +1, howto +1, definition -2, factoid -1)",
+  "production_adjustment": {
+    "kw_session": 1,
+    "kw_container": 3
+  },
+  "production_full_set_score": 0.6903000000000001,
+  "loo_honest_score": 0.6548,
+  "heuristic_alone": 0.6553,
+  "rule_only": 0.6578,
+  "llm_only": 0.6327,
+  "oracle": 0.8366
+}

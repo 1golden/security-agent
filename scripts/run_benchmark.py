@@ -96,6 +96,16 @@ def main() -> int:
             session_id=f"{args.session_prefix}-{i:03d}",
             metadata={"ground_truth": gt, "category": category, "source": source},
         )
+        # Cross-Q memory bleed: InMemoryStore ignores session_id in its
+        # token-overlap search (memory/inmem.py), so prior Qs' content
+        # poisons later Qs' memory step. Found in v5 mini-bench: i=3
+        # dropped 0.835 → 0.100 because Qs 0-2 mentioned similar MITRE
+        # IDs. Clear the store per Q so each benchmark Q starts clean.
+        mem = getattr(pipe, "memory", None) or getattr(pipe, "_memory", None)
+        if mem is not None and hasattr(mem, "_records"):
+            mem._records.clear()
+            if hasattr(mem, "_by_session"):
+                mem._by_session.clear()
         try:
             result = pipe.ask(question)
         except Exception as e:

@@ -436,7 +436,10 @@ def build_default_pipeline(
     if cfg.retriever.backend == "handmade_rag":
         from security_agent.retrieval.handmade_rag_adapter import HandmadeRagAdapter
 
-        retriever: Retriever = HandmadeRagAdapter(cfg.retriever.handmade_rag_root)
+        retriever: Retriever = HandmadeRagAdapter(
+            cfg.retriever.handmade_rag_root,
+            index_dir=cfg.retriever.handmade_rag_index_dir or None,
+        )
     else:
         retriever = DummyRetriever()
 
